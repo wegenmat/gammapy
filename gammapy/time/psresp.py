@@ -267,7 +267,7 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
 
     parameters = binning  # np.logspace(0, 2, 5)
     suf = np.empty([len(slopes), len(binning), len(df)])
-    best_slopes = np.empty([3, len(binning), len(df)])
+    statistics = np.empty([4, len(binning), len(df)])
     for b in range(len(binning)):
         print('binning: ' + str(binning[b]))
         # t, dt, y, dy = binned(t_ini, dt_ini, y_ini, dy_ini, binning[b])
@@ -281,11 +281,11 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
                 print('df: ' + str(df[f]))
 
                 # psresp
-                faketime, fakerate, obs_freqs, obs_power, bintime, binrate, avg_pds, pds_err, allpds = psresp_pro(t, y, dy, slopes[s], number_simulations, binning[b], oversampling, df[f], source_id, data_flag)
+                faketime, fakerate, obs_freqs, obs_power, bintime, binrate, avg_pds, pds_err, allpds = psresp_pro(t, y, dy, slopes[s], number_simulations, binning[b], oversampling, df[f])
                 # all_avg_pds.append(avg_pds)
 
                 # do chi2
-                suf[s, b, f] = compare(obs_power, avg_pds, pds_err, allpds, number_simulations, source_id, data_flag)
+                suf[s, b, f] = compare(obs_power, avg_pds, pds_err, allpds, number_simulations)
 
                 # find best slope and estimate error
                 best_slope = slopes[np.argmax(suf[:, b, f])]
@@ -293,42 +293,51 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
                 slopes_fwhw = slopes[np.less_equal(suf[:, b, f], 0.5 * best_slope_suf)]
                 low_slopes = slopes_fwhw[slopes_fwhw > best_slope]
                 high_slopes = slopes_fwhw[slopes_fwhw < best_slope]
-                if (len(low_slopes) == 0) or (len(high_slopes) == 0):
-                    fwhw = np.nan
-                else:
-                    low = np.abs(np.min(low_slopes) - best_slope)
-                    high = np.abs(np.max(high_slopes) - best_slope)
-                    fwhw = low + high
+                # if (len(low_slopes) == 0) or (len(high_slopes) == 0):
+                #     fwhw = np.nan
+                # else:
+                #     low = np.abs(np.min(low_slopes) - best_slope)
+                #     high = np.abs(np.max(high_slopes) - best_slope)
+                #     fwhw = low + high
+                if (len(low_slopes) == 0):
+                    low_slopes = np.nan
+                if (len(high_slopes) == 0):
+                    high_slopes = np.nan
+                low = np.abs(np.min(low_slopes) - best_slope)
+                high = np.abs(np.max(high_slopes) - best_slope)
             
-                best_slopes[0, b, f] = best_slope
-                best_slopes[1, b, f] = best_slope_suf
-                best_slopes[2, b, f] = fwhw
+                statistics[0, b, f] = best_slope
+                statistics[1, b, f] = best_slope_suf
+                # statistics[2, b, f] = fwhw
+                statistics[2, b, f] = low
+                statistics[3, b, f] = high
     
     bintime = bintime + t[0]
 
     # repo = str('/afs/ifh.de/group/amanda/scratch/wegenmat/ownCloud/Documents/data/statistical_analysis/' + source_id + '/SuF/')
 
-    full_result = np.vstack((suf, best_slopes))
-    best_slopes_test = (best_slopes[1, :, :] > 0*np.max(suf))  # & (np.isfinite(best_slopes[2,:,:]))
-    best_parameters = np.where(best_slopes_test == True)
-    mean_slope = np.sum(best_slopes[0, :, :][best_slopes_test] * best_slopes[1, :, :][best_slopes_test]) / (np.sum(best_slopes_test))
-    mean_error = np.sqrt(np.sum((best_slopes[2, :, :][best_slopes_test] * best_slopes[1, :, :][best_slopes_test])**2))
+    full_result = np.vstack((suf, statistics))
+    statistics_test = (statistics[1, :, :] > 0.95*np.max(suf)) & (len(statistics[2,:,:]) != 0) & (len(statistics[3,:,:]) != 0)
+    best_parameters = np.where(statistics_test == True)
+    mean_slope = np.sum(statistics[0, :, :][statistics_test] * statistics[1, :, :][statistics_test]) / (np.sum(statistics_test))
+    # mean_error = np.sqrt(np.sum((statistics[2, :, :][statistics_test] * statistics[1, :, :][statistics_test])**2))
+    mean_error = np.max(statistics[2, :, :][statistics_test]) + np.max(statistics[3, :, :][statistics_test])
 
     data = Table()
     data['SuF'] = full_result
-    data.write(str(repo + 'SuF.fits'), overwrite=True)
+    # data.write(str(repo + 'SuF.fits'), overwrite=True)
 
     data = Table()
-    data['best_slopes'] = best_slopes
-    data.write(str(repo + 'best_slopes.fits'), overwrite=True)
+    data['statistics'] = statistics
+    # data.write(str(repo + 'best_slopes.fits'), overwrite=True)
 
     data = Table()
     data['best_parameters'] = np.array([binning[best_parameters[0]], df[best_parameters[1]]])
-    data.write(str(repo + 'best_parameters.fits'), overwrite=True)
+    # data.write(str(repo + 'best_parameters.fits'), overwrite=True)
 
     data = Table()
     data['result'] = np.array([mean_slope, mean_error])
-    data.write(str(repo + 'result.fits'), overwrite=True)
+    # data.write(str(repo + 'result.fits'), overwrite=True)
 
     # prepare data for plot
     # data = np.empty([len(slopes)*len(binning)*len(df), 4])
@@ -362,7 +371,7 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
     # ax2.set_yscale('log')
     # ax2.legend()
     for indx in range(len(best_parameters[0])):
-        ax3.plot(-slopes, SuF[:, binning == binning[best_parameters[0][indx]], df == df[best_parameters[1][indx]]], label='$ \Delta t_{{bin}} = {} $, $ \Delta f = {} $'.format(binning[best_parameters[0][indx]], df[best_parameters[1][indx]]))
+        ax3.plot(-slopes, suf[:, binning == binning[best_parameters[0][indx]], df == df[best_parameters[1][indx]]], label='$ \Delta t_{{bin}} = {} $, $ \Delta f = {} $'.format(binning[best_parameters[0][indx]], df[best_parameters[1][indx]]))
     ax3.set(xlabel=r'\textbf{slope}',
             ylabel=r'\textbf{success fraction}',
             # , xlim=(0, max_period)
@@ -426,6 +435,6 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
     print('mean error ' + str(mean_error))
     for indx in range(len(best_parameters[0])):
         print('used parameters: (binning ' + str(binning[best_parameters[0][indx]]) + ', df ' + str(df[best_parameters[1][indx]]) + ')')
-    print('saved ' + repo)
+    # print('saved ' + repo)
 
     return dict(mean_slope=mean_slope, mean_error=mean_error)
