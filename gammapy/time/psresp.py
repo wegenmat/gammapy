@@ -1,7 +1,6 @@
 import numpy as np
 from astropy.table import Table
-from scipy import optimize
-from scipy.interpolate import interp1d
+from scipy import optimize, interpolate
 
 # matplotlib inline
 import matplotlib.pyplot as plt
@@ -290,38 +289,49 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
                 # find best slope and estimate error
                 best_slope = slopes[np.argmax(suf[:, b, f])]
                 best_slope_suf = np.max(suf[:, b, f])
-                slopes_fwhw = slopes[np.less_equal(suf[:, b, f], 0.5 * best_slope_suf)]
-                low_slopes = slopes_fwhw[slopes_fwhw > best_slope]
-                high_slopes = slopes_fwhw[slopes_fwhw < best_slope]
+                slopes_fwhw = interpolate.UnivariateSpline(-slopes, suf[:, b, f] - 0.5 * best_slope_suf, s=0).roots()
+                # slopes_fwhw = slopes[np.less_equal(suf[:, b, f], 0.5 * best_slope_suf)]
+                # low_slopes = slopes_fwhw[slopes_fwhw > best_slope]
+                # high_slopes = slopes_fwhw[slopes_fwhw < best_slope]
+                # print(slopes_fwhw)
+                low_slopes = -slopes_fwhw[0]
+                high_slopes = -slopes_fwhw[-1]
                 # if (len(low_slopes) == 0) or (len(high_slopes) == 0):
                 #     fwhw = np.nan
                 # else:
                 #     low = np.abs(np.min(low_slopes) - best_slope)
                 #     high = np.abs(np.max(high_slopes) - best_slope)
                 #     fwhw = low + high
-                if (len(low_slopes) == 0):
-                    low_slopes = np.nan
-                if (len(high_slopes) == 0):
-                    high_slopes = np.nan
-                low = np.abs(np.min(low_slopes) - best_slope)
-                high = np.abs(np.max(high_slopes) - best_slope)
+                # if len(low_slopes) == 0:
+                #     low_slopes = np.nan
+                # if len(high_slopes) == 0:
+                #     high_slopes = np.nan
+                if low_slopes == high_slopes:
+                    low_slopes = high_slopes = np.nan
+                # low = np.abs(np.min(low_slopes) - best_slope)
+                # high = np.abs(np.max(high_slopes) - best_slope)
+                else:
+                    low_diff = np.abs(low_slopes - best_slope)
+                    high_diff = np.abs(high_slopes - best_slope)
+                    # print(low, high)
             
                 statistics[0, b, f] = best_slope
                 statistics[1, b, f] = best_slope_suf
                 # statistics[2, b, f] = fwhw
-                statistics[2, b, f] = low
-                statistics[3, b, f] = high
+                statistics[2, b, f] = low_slopes
+                statistics[3, b, f] = high_slopes
     
     bintime = bintime + t[0]
 
     # repo = str('/afs/ifh.de/group/amanda/scratch/wegenmat/ownCloud/Documents/data/statistical_analysis/' + source_id + '/SuF/')
 
     full_result = np.vstack((suf, statistics))
-    statistics_test = (statistics[1, :, :] > 0.95*np.max(suf)) & (len(statistics[2,:,:]) != 0) & (len(statistics[3,:,:]) != 0)
+    # statistics_test = (statistics[1, :, :] > 0.95*np.max(suf)) & (len(statistics[2,:,:]) != 0) & (len(statistics[3,:,:]) != 0)
+    statistics_test = (statistics[1, :, :] > 0.95*np.max(suf)) & (np.isfinite(statistics[2,:,:])) & (np.isfinite(statistics[3,:,:]))
     best_parameters = np.where(statistics_test == True)
     mean_slope = np.sum(statistics[0, :, :][statistics_test] * statistics[1, :, :][statistics_test]) / (np.sum(statistics_test))
     # mean_error = np.sqrt(np.sum((statistics[2, :, :][statistics_test] * statistics[1, :, :][statistics_test])**2))
-    mean_error = np.max(statistics[2, :, :][statistics_test]) + np.max(statistics[3, :, :][statistics_test])
+    mean_error = np.abs(np.max(statistics[2, :, :][statistics_test]) - np.min(statistics[3, :, :][statistics_test]))
 
     data = Table()
     data['SuF'] = full_result
@@ -378,8 +388,8 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
             ylim=(0, 1)
             )
     ax3.legend()
-    plt.show()
-    # plt.savefig(repo + 'SuF', bbox_inches='tight')
+    # plt.show()
+    plt.savefig('SuF', bbox_inches='tight')
 
     fig = plt.figure(figsize=(11, 11))
     ax = fig.gca(projection='3d')
@@ -426,8 +436,8 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
     # for n in range(number_simulations):
     #     ax5.plot(t_sim[n,0,:], y_sim[n,0,:])
     # name = str(repo + '/' + '+'.join(entry for entry in data_flag))
-    plt.show()
-    # plt.savefig(repo + 'contour', bbox_inches='tight')
+    # plt.show()
+    plt.savefig('Contour', bbox_inches='tight')
 
     # print('SuF ' + str(SuF))
     # print('best slopes ' + str(best_slopes))
