@@ -10,15 +10,27 @@ rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 
 
 def plot_psresp(slopes, binning, df, suf, best_parameters):
-    '''
-    TODO write dosctring
-    :param slopes:
-    :param binning:
-    :param df:
-    :param suf:
-    :param best_parameters:
-    :return:
-    '''
+    """
+    Plot the success fraction over slopes for parameters satisfying the significance criterion
+    and the histogram over the grid of parameters.
+
+    Parameters
+    ----------
+    slopes : `~numpy.ndarray`
+        slopes of the power law model
+    binning : `~numpy.ndarray`
+        bin length for the light curve in units of ``t``
+    df : `~numpy.ndarray`
+        bin factor for the logarithmic periodogram
+    suf : `~numpy.ndarray`
+        Success fraction for each model parameter
+    best_parameters : `~numpy.ndarray`
+        Parameters satisfying the significance criterion
+
+    Returns
+    -------
+    plot
+    """
 
     fig = plt.figure(figsize=(11, 11))
     for indx in range(len(best_parameters[0])):

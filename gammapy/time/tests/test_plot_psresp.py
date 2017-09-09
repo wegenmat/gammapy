@@ -69,9 +69,9 @@ def test_psresp(test_case):
         test_case['slope'], test_case['nt'], test_case['dt']
     )
     result = psresp(
-        test_data['t'][300:700], test_case['dt'], test_data['y'][300:700], test_case['dy'][300:700],
-        test_case['slopes'], test_case['n_simulations'],
-        test_case['binning'], test_case['oversampling'], test_case['df'],
+        test_data['t'][300:700], test_data['y'][300:700], test_case['dy'][300:700],
+        test_case['slopes'], test_case['binning'], test_case['df'],
+        test_case['oversampling'], test_case['n_simulations'],
     )
     plot_psresp(
         test_case['slopes'], test_case['binning'], test_case['df'],

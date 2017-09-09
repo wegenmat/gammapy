@@ -245,21 +245,54 @@ def _psresp_pro(t, y, dy, slopes, number_simulations, binning, oversampling, df)
     return faketime, fakerate, obs_freqs, obs_power, bintime, binrate, avg_pds, pds_err, allpds
 
 
-def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
-    '''
-    TODO: Write docstring
-    :param t:
-    :param dt:
-    :param y:
-    :param dy:
-    :param slopes:
-    :param number_simulations:
-    :param binning:
-    :param oversampling:
-    :param df:
-    :return:
-    '''
-    t_ini, dt_ini, y_ini, dy_ini = t, dt, y, dy
+def psresp(t, y, dy, slopes, binning, df, oversampling=10, number_simulations=100):
+    """
+    Compute power spectral density of a light curve assuming an unbroken power law with the PSRESP method.
+
+    The artificial light curves are generated using the algorithm by Timmer and Koenig (1995).
+    For an introduction to the PSRESP method, see Uttley (2002).
+
+    The function returns a results dictionary with the following content:
+
+    - ``slope`` (`float`) -- Slope of the power law
+    - ``slope_error`` (`float`) -- Error of the slope of the power law
+    - ``suf`` (`~numpy.ndarray`) -- Success fraction for each model parameter
+    - ``best_parameters`` (`~numpy.ndarray`) -- Parameters satisfying the significance criterion
+    - ``statistics`` (`~numpy.ndarray`) -- Data used to calculate the data above
+
+    Parameters
+    ----------
+    t : `~numpy.ndarray`
+        Time array of the light curve
+    y : `~numpy.ndarray`
+        Flux array of the light curve
+    dy : `~numpy.ndarray`
+        Flux error array of the light curve
+    slopes : `~numpy.ndarray`
+        slopes of the power law model
+    binning : `~numpy.ndarray`
+        bin length for the light curve in units of ``t``
+    df : `~numpy.ndarray`
+        bin factor for the logarithmic periodogram
+    oversampling: `float`
+        oversampling factor of the simulated light curve, default is 10
+    number_simulations:
+        number of simulations for each model parameter, default is 10
+
+    Returns
+    -------
+    results : `~collections.OrderedDict`
+        Results dictionary (see description above).
+
+    References
+    ----------
+    .. [1] Timmer and Koenig (1995), "On generating power law noise",
+       `Link <http://adsabs.harvard.edu/abs/1995A%26A...300..707T>`_
+    .. [2] Uttley et al, "Measuring the broad-band power spectra of active galactic nuclei with RXTE",
+       `Link <https://academic.oup.com/mnras/article/332/1/231/974626/Measuring-the-broad-band-power-spectra-of-active>`_
+    """
+
+    t_ini, y_ini, dy_ini = t, y, dy
     suf = np.empty([len(slopes), len(binning), len(df)])
     statistics = np.empty([4, len(binning), len(df)])
     for b in range(len(binning)):
@@ -298,7 +331,7 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
                       (np.isfinite(statistics[3, :, :]))
     best_parameters = np.where(statistics_test == True)
     mean_slope = np.sum(statistics[0, :, :][statistics_test] * statistics[1, :, :][statistics_test]) \
-                 / (np.sum(statistics_test))
+        / (np.sum(statistics_test))
     mean_error = np.abs(np.max(statistics[2, :, :][statistics_test]) - np.min(statistics[3, :, :][statistics_test]))
 
     data = Table()
@@ -324,8 +357,8 @@ def psresp(t, dt, y, dy, slopes, number_simulations, binning, oversampling, df):
         print('used parameters: (binning ' + str(binning[best_parameters[0][indx]]) +
               ', df ' + str(df[best_parameters[1][indx]]) + ')')
 
-    return dict(mean_slope=mean_slope,
-                mean_error=mean_error,
+    return dict(slope=mean_slope,
+                slope_error=mean_error,
                 suf=suf,
                 best_parameters=best_parameters,
                 statistics=statistics
