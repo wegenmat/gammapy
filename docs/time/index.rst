@@ -108,6 +108,7 @@ Content
 .. toctree::
    :maxdepth: 1
 
+   period
    psresp
 
 Reference/API
@@ -115,3 +116,4 @@ Reference/API
 
 .. automodapi:: gammapy.time
     :no-inheritance-diagram:
+    :include-all-objects:

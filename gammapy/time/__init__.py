@@ -8,3 +8,5 @@ from .lightcurve import *
 from .exptest import *
 from .psresp import *
 from .plot_psresp import *
+from .lomb_scargle import *
+from .plot_periodogram import *
