@@ -1,23 +1,27 @@
 *****************************
-Period detection and plotting
+Power spectral response method
 *****************************
-.. currentmodule:: gammapy.time.lomb_scargle
-.. currentmodule:: gammapy.time.plot_periodogram
+.. currentmodule:: gammapy.time.psresp
 
 Introduction
 ============
-`~gammapy.time.lomb_scargle` establishes methods for period detection in unevenly sampled time series. It computes the Lomb-Scargle periodogram and the spectral window function on a light curve and returns the period of an intrinsic periodic beahviour in respect of different significance criteria and an adjustable false alarm probability. The result can be plotted with `gammapy.time.plot_periodogram`.
-The Lomb Scargle algorithm is provided by `astropy.stats.LombScargle`.
+`~gammapy.time.psresp` establishes the power spectral response method (PSRESP) for the analysis of the power spectral density (PSD) of light curves.
+It is a Monte Carlo approach that takes the sampling directly into account and reveals the underlying PSD.
+As model for the PSD, an unbroken power law is assumed.
+For each model parameter (i.e. slope of the power law), a success fraction (SUF) is calculated that defines the inverse rejection level for this model.
+The slope of the PSD model for the light curve is estimated as the mean of all slopes providing a significant SUF.
+The corresponding error is given by the full width at half maximum (FWHM) of the SUF distribution.
 
 Getting Started
 ===============
 Input
 -----
-`~gammapy.time.lomb_scargle` takes a light curve in format time, flux and flux error.
-Additionally, the linear frequency grid can be narrowed down with an oversampling factor.
-For the significance criteria, the false alarm probability need to be defined.
-For the bootstrap resamling, the number of resamlings has to be defined.
-`~gammapy.time.plot_periodogram` takes the output of `~gammapy.time.lomb_scargle` as input.
+`~gammapy.time.psresp` takes a light curve in format time, flux and flux error.
+For the PSD model, the trial slopes have to be forwarded.
+The PSRESP method bins the light curve and the periodogram and needs this parameters.
+Additionally, the oversampling of the artificial light curves can be defined.
+To determine the significant SUF, the percentile for the SUF distribution needs to be given.
+`~gammapy.time.plot_psresp` takes the output of `~gammapy.time.psresp` as input.
 
 Output
 ------

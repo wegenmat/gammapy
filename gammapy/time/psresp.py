@@ -1,7 +1,4 @@
 import numpy as np
-from astropy.table import Table
-from scipy import optimize, interpolate
-
 
 __all__ = [
     'psresp',
@@ -136,6 +133,7 @@ def _chi2_obs(norm, obs_pds, avg_pds, pds_err):
 
 
 def _compare(obs_pds, avg_pds, pds_err, allpds, number_simulations):
+    from scipy import optimize
     norm0 = 1.
     chi_obs = optimize.minimize(_chi2_obs, norm0, args=(obs_pds, avg_pds, pds_err), method='SLSQP').fun
     
@@ -245,7 +243,7 @@ def _psresp_pro(t, y, dy, slopes, number_simulations, binning, oversampling, df)
     return faketime, fakerate, obs_freqs, obs_power, bintime, binrate, avg_pds, pds_err, allpds
 
 
-def psresp(t, y, dy, slopes, binning, df, oversampling=10, number_simulations=100):
+def psresp(t, y, dy, slopes, dt, df, significance, oversampling=10, number_simulations=100):
     """
     Compute power spectral density of a light curve assuming an unbroken power law with the PSRESP method.
 
@@ -270,10 +268,12 @@ def psresp(t, y, dy, slopes, binning, df, oversampling=10, number_simulations=10
         Flux error array of the light curve
     slopes : `~numpy.ndarray`
         slopes of the power law model
-    binning : `~numpy.ndarray`
+    dt : `~numpy.ndarray`
         bin length for the light curve in units of ``t``
     df : `~numpy.ndarray`
         bin factor for the logarithmic periodogram
+    significance : `float`
+        quantile of the distribution of success fraction
     oversampling: `float`
         oversampling factor of the simulated light curve, default is 10
     number_simulations:
@@ -292,13 +292,14 @@ def psresp(t, y, dy, slopes, binning, df, oversampling=10, number_simulations=10
        `Link <https://academic.oup.com/mnras/article/332/1/231/974626/Measuring-the-broad-band-power-spectra-of-active>`_
     """
 
+    from scipy import interpolate
     t_ini, y_ini, dy_ini = t, y, dy
-    suf = np.empty([len(slopes), len(binning), len(df)])
-    statistics = np.empty([4, len(binning), len(df)])
-    for b in range(len(binning)):
-        # print('binning: ' + str(binning[b]))
-        t, y = _rebinlc(t_ini, y_ini, binning[b])
-        t, dy = _rebinlc(t_ini, dy_ini, binning[b])
+    suf = np.empty([len(slopes), len(dt), len(df)])
+    statistics = np.empty([4, len(dt), len(df)])
+    for b in range(len(dt)):
+        # print('binning: ' + str(dt[b]))
+        t, y = _rebinlc(t_ini, y_ini, dt[b])
+        t, dy = _rebinlc(t_ini, dy_ini, dt[b])
         for f in range(len(df)):
             # print('df: ' + str(df[f]))
             for s in range(len(slopes)):
@@ -306,7 +307,7 @@ def psresp(t, y, dy, slopes, binning, df, oversampling=10, number_simulations=10
 
                 # psresp
                 faketime, fakerate, obs_freqs, obs_power, bintime, binrate, avg_pds, pds_err, allpds = \
-                    _psresp_pro(t, y, dy, slopes[s], number_simulations, binning[b], oversampling, df[f])
+                    _psresp_pro(t, y, dy, slopes[s], number_simulations, dt[b], oversampling, df[f])
 
                 # do chi2
                 suf[s, b, f] = _compare(obs_power, avg_pds, pds_err, allpds, number_simulations)
@@ -326,7 +327,8 @@ def psresp(t, y, dy, slopes, binning, df, oversampling=10, number_simulations=10
             statistics[2, b, f] = low_slopes
             statistics[3, b, f] = high_slopes
 
-    statistics_test = (statistics[1, :, :] > 0.95*np.max(suf)) & \
+    test_significance = np.percentile(statistics[1, :, :], 100*significance)
+    statistics_test = (np.greater_equal(statistics[1, :, :], test_significance)) & \
                       (np.isfinite(statistics[2, :, :])) & \
                       (np.isfinite(statistics[3, :, :]))
     best_parameters = np.where(statistics_test == True)
@@ -334,27 +336,10 @@ def psresp(t, y, dy, slopes, binning, df, oversampling=10, number_simulations=10
         / (np.sum(statistics_test))
     mean_error = np.abs(np.max(statistics[2, :, :][statistics_test]) - np.min(statistics[3, :, :][statistics_test]))
 
-    data = Table()
-    full_result = np.vstack((suf, statistics))
-    data['SuF'] = full_result
-    # data.write(str(repo + 'SuF.fits'), overwrite=True)
-
-    data = Table()
-    data['statistics'] = statistics
-    # data.write(str(repo + 'best_slopes.fits'), overwrite=True)
-
-    data = Table()
-    data['best_parameters'] = np.array([binning[best_parameters[0]], df[best_parameters[1]]])
-    # data.write(str(repo + 'best_parameters.fits'), overwrite=True)
-
-    data = Table()
-    data['result'] = np.array([mean_slope, mean_error])
-    # data.write(str(repo + 'result.fits'), overwrite=True)
-
     print('mean slope ' + str(mean_slope))
     print('mean error ' + str(mean_error))
     for indx in range(len(best_parameters[0])):
-        print('used parameters: (binning ' + str(binning[best_parameters[0][indx]]) +
+        print('used parameters: (dt ' + str(dt[best_parameters[0][indx]]) +
               ', df ' + str(df[best_parameters[1][indx]]) + ')')
 
     return dict(slope=mean_slope,

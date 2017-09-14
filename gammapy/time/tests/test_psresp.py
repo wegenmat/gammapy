@@ -55,8 +55,8 @@ def timmerlc(slope, nt='None', dt='None', mean='None', sigma='None', seed='None'
 
 
 TEST_CASES = [
-    dict(slope=-1.6, nt=1000, dt=1, dy=np.ones([1000]),
-         binning=np.array([2, 3, 4, 5, 6]), oversampling=10, n_simulations=100,
+    dict(slope=-1.6, nt=1000, res=1, dy=np.ones([1000]),
+         dt=np.array([2, 3, 4, 5, 6]), significance=0.95, oversampling=10, n_simulations=100,
          df=np.array([0.1, 0.3, 0.5, 0.7, 0.9, 1.1]), slopes=-np.linspace(1, 2.5, 16)
          )
 ]
@@ -65,11 +65,11 @@ TEST_CASES = [
 @pytest.mark.parametrize('test_case', TEST_CASES)
 def test_psresp(test_case):
     test_data = timmerlc(
-        test_case['slope'], test_case['nt'], test_case['dt']
+        test_case['slope'], test_case['nt'], test_case['res']
     )
     result = psresp(
         test_data['t'][300:700], test_data['y'][300:700], test_case['dy'][300:700],
-        test_case['slopes'], test_case['binning'], test_case['df'],
+        test_case['slopes'], test_case['dt'], test_case['df'], test_case['significance'],
         test_case['oversampling'], test_case['n_simulations'],
     )
     assert_allclose(result['slope'], test_case['slope'], atol=result['slope_error'],)
