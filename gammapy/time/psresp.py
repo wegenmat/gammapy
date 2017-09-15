@@ -273,10 +273,10 @@ def psresp(t, y, dy, slopes, dt, df, significance, oversampling=10, number_simul
     df : `~numpy.ndarray`
         bin factor for the logarithmic periodogram
     significance : `float`
-        quantile of the distribution of success fraction
-    oversampling: `float`
+        quantile of the distribution of success fraction, `0 < significance < 1`
+    oversampling : `int`
         oversampling factor of the simulated light curve, default is 10
-    number_simulations:
+    number_simulations : `int`
         number of simulations for each model parameter, default is 10
 
     Returns
