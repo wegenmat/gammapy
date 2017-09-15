@@ -243,7 +243,7 @@ def _psresp_pro(t, y, dy, slopes, number_simulations, binning, oversampling, df)
     return faketime, fakerate, obs_freqs, obs_power, bintime, binrate, avg_pds, pds_err, allpds
 
 
-def psresp(t, y, dy, slopes, dt, df, significance, oversampling=10, number_simulations=100):
+def psresp(t, y, dy, slopes, dt, df, percentile, oversampling=10, number_simulations=100):
     """
     Compute power spectral density of a light curve assuming an unbroken power law with the PSRESP method.
 
@@ -256,7 +256,13 @@ def psresp(t, y, dy, slopes, dt, df, significance, oversampling=10, number_simul
     - ``slope_error`` (`float`) -- Error of the slope of the power law
     - ``suf`` (`~numpy.ndarray`) -- Success fraction for each model parameter
     - ``best_parameters`` (`~numpy.ndarray`) -- Parameters satisfying the significance criterion
-    - ``statistics`` (`~numpy.ndarray`) -- Data used to calculate the data above
+    - ``statistics`` (`~numpy.ndarray`) -- Data used to calculate the mean slope and its error
+      over a grid of ``dt`` and ``df``
+
+        - slope with the highest success fraction
+        - highest success fraction
+        - slope of the lower full width at half maximum for the success fraction distribution
+        - slope of the higher full width at half maximum for the success fraction distribution
 
     Parameters
     ----------
@@ -272,8 +278,8 @@ def psresp(t, y, dy, slopes, dt, df, significance, oversampling=10, number_simul
         bin length for the light curve in units of ``t``
     df : `~numpy.ndarray`
         bin factor for the logarithmic periodogram
-    significance : `float`
-        quantile of the distribution of success fraction, `0 < significance < 1`
+    percentile : `float`
+        percentile of the distribution of success fraction, `0 < significance < 1`
     oversampling : `int`
         oversampling factor of the simulated light curve, default is 10
     number_simulations : `int`
@@ -327,7 +333,7 @@ def psresp(t, y, dy, slopes, dt, df, significance, oversampling=10, number_simul
             statistics[2, b, f] = low_slopes
             statistics[3, b, f] = high_slopes
 
-    test_significance = np.percentile(statistics[1, :, :], 100*significance)
+    test_significance = np.percentile(statistics[1, :, :], 100*percentile)
     statistics_test = (np.greater_equal(statistics[1, :, :], test_significance)) & \
                       (np.isfinite(statistics[2, :, :])) & \
                       (np.isfinite(statistics[3, :, :]))

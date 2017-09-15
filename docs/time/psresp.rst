@@ -17,15 +17,19 @@ Getting Started
 Input
 -----
 `~gammapy.time.psresp` takes a light curve in format time, flux and flux error.
-For the PSD model, the trial slopes have to be forwarded.
-The PSRESP method bins the light curve and the periodogram and needs this parameters.
-Additionally, the oversampling of the artificial light curves can be defined.
-To determine the significant SUF, the percentile for the SUF distribution needs to be given.
+For the PSD model, the trial slopes have to be forwarded via `slopes`.
+The PSRESP method bins the light curve and the periodogram as defined by `dt` and `df`.
+To determine the significant SUF, the percentile for the SUF distribution, `percentile`, needs to be given.
+The number of simulations can be defined by `number_simulations`, it is 100 by default.
+Additionally, the oversampling of the artificial light curves can be defined by `oversampling`.
 `~gammapy.time.plot_psresp` takes the output of `~gammapy.time.psresp` as input.
 
 Output
 ------
-`~gammapy.time.lomb_scargle` returns the frequency grid, the periodogram peaks of the Lomb-Scargle periodogram and the spectral window function, the percentiles of all significance criteria for a specified false alarm probability, as well as the best period if found.
+`~gammapy.time.psres` returns the mean slope and its error,
+the success fraction over a grid of model parameters (`slopes`, `dt`, `df`),
+parameters `dt` and `df` providing a significant SUF
+and the statistics used to calculate the mean slope and its error.
 
 Example
 =======
