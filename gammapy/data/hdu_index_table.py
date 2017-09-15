@@ -172,7 +172,7 @@ class HDUIndexTable(Table):
             idx = idx[0]
         elif len(idx) == 0:
             raise IndexError('No HDU found matching: OBS_ID = {}, HDU_TYPE = {}, HDU_CLASS = {}'
-                             ''.format(obs_id, hdu_type, hdu_class))
+                             .format(obs_id, hdu_type, hdu_class))
         else:
             idx = idx[0]
             log.warn('Found multiple HDU matching: OBS_ID = {}, HDU_TYPE = {}, HDU_CLASS = {}.'

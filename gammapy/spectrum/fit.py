@@ -284,7 +284,7 @@ class SpectrumFit(object):
             on_stat = np.nan_to_num(on_stat_)
             off_stat = np.zeros_like(on_stat)
         else:
-            raise NotImplementedError('{}'.format(self.stat))
+            raise NotImplementedError('-{}- (1)'.format(self.stat))
 
         return on_stat, off_stat
 
@@ -403,7 +403,6 @@ class SpectrumFit(object):
 
         model = self.model.copy()
         if self.background_model is not None:
-
             bkg_model = self.background_model.copy()
         else:
             bkg_model = None
@@ -437,7 +436,7 @@ class SpectrumFit(object):
         if self.err_method == 'sherpa':
             self._est_errors_sherpa()
         else:
-            raise NotImplementedError('{}'.format(self.err_method))
+            raise NotImplementedError('-{}- (2)'.format(self.err_method))
 
         for res in self.result:
             res.covar_axis = self.covar_axis
@@ -458,7 +457,7 @@ class SpectrumFit(object):
         outdir : Path, str
             directory to write results files to (if given)
         """
-        log.info('Running {}'.format(self))
+        log.info(' Running {}'.format(self))
 
         self.fit()
         self.est_errors()
