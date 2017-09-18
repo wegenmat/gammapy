@@ -322,9 +322,11 @@ def psresp(t, y, dy, slopes, dt, df, percentile, oversampling=10, number_simulat
             best_slope = slopes[np.argmax(suf[:, b, f])]
             best_slope_suf = np.max(suf[:, b, f])
 
-            slopes_fwhw = interpolate.UnivariateSpline(-slopes, suf[:, b, f] - 0.5 * best_slope_suf, s=0).roots()
-            low_slopes = -slopes_fwhw[0]
-            high_slopes = -slopes_fwhw[-1]
+            slopes_fwhm = interpolate.UnivariateSpline(-slopes, suf[:, b, f] - 0.5 * best_slope_suf, s=0).roots()
+            if len(slopes_fwhm) == 0:
+                slopes_fwhm = [np.nan]
+            low_slopes = -slopes_fwhm[0]
+            high_slopes = -slopes_fwhm[-1]
             if low_slopes == high_slopes:
                 low_slopes = high_slopes = np.nan
 
@@ -341,12 +343,6 @@ def psresp(t, y, dy, slopes, dt, df, percentile, oversampling=10, number_simulat
     mean_slope = np.sum(statistics[0, :, :][statistics_test] * statistics[1, :, :][statistics_test]) \
         / (np.sum(statistics_test))
     mean_error = np.abs(np.max(statistics[2, :, :][statistics_test]) - np.min(statistics[3, :, :][statistics_test]))
-
-    print('mean slope ' + str(mean_slope))
-    print('mean error ' + str(mean_error))
-    for indx in range(len(best_parameters[0])):
-        print('used parameters: (dt ' + str(dt[best_parameters[0][indx]]) +
-              ', df ' + str(df[best_parameters[1][indx]]) + ')')
 
     return dict(slope=mean_slope,
                 slope_error=mean_error,

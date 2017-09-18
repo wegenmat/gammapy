@@ -44,7 +44,7 @@ def plot_psresp(slopes, dt, df, suf, best_parameters):
     fig = plt.figure(figsize=(11, 11))
     ax = fig.gca(projection='3d')
 
-    X, Y, Z = -slopes, binning, df
+    X, Y, Z = -slopes, dt, df
 
     suf_test = suf > 0.95 * np.max(suf)
     sumz = np.sum(suf_test, axis=2)
