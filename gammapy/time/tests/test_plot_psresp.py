@@ -58,7 +58,7 @@ def timmerlc(slope, nt='None', dt='None', mean='None', sigma='None', seed='None'
 TEST_CASES = [
     dict(slope=-1.6, nt=1000, res=1, dy=np.ones([1000]),
          dt=np.array([2, 3, 4, 5, 6]), percentile=0.95, oversampling=10, n_simulations=100,
-         df=np.array([0.1, 0.3, 0.5, 0.7, 0.9, 1.1]), slopes=-np.linspace(1, 2.5, 16)
+         df=np.array([0.1, 0.3, 0.5, 0.7, 0.9, 1.1]), slopes=np.linspace(1, 2.5, 16)
          )
 ]
 
@@ -74,6 +74,6 @@ def test_psresp(test_case):
         test_case['oversampling'], test_case['n_simulations'],
     )
     plot_psresp(
-        test_case['slopes'], test_case['binning'], test_case['df'],
-        result['suf'], result['best_parameters']
+        test_case['slopes'], test_case['dt'], test_case['df'], result['suf'],
+        result['slope'], result['slope_error'], result['best_parameters'], result['statistics'],
     )

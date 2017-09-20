@@ -160,7 +160,7 @@ def _psresp_pro(t, y, dy, slopes, number_simulations, binning, oversampling, df)
     date = date - date[0]
     duration = np.max(date) - np.min(date)
     npoints = int(duration / bin) * number_simulations * oversampling
-    params = slopes
+    params = -slopes
     lc_variance = np.var(rat) - np.var(raterr)
     # observed PDS calculation
     obs_nu, obs_pds = _do_periodogram(rat)
@@ -170,7 +170,6 @@ def _psresp_pro(t, y, dy, slopes, number_simulations, binning, oversampling, df)
     obs_pds = (2.*duration) / (np.mean(rat)*np.mean(rat)*len(rat)*len(rat)) * obs_pds
 
     # rebin
-    # obs_freqs, obs_power = binlogPSD(obs_nu, obs_pds, df)
     obs_freqs, obs_power = _rebinlc(obs_nu, obs_pds, dt=df)
     obs_power = np.log10(obs_power)    
 
@@ -252,7 +251,7 @@ def psresp(t, y, dy, slopes, dt, df, percentile, oversampling=10, number_simulat
 
     The function returns a results dictionary with the following content:
 
-    - ``slope`` (`float`) -- Slope of the power law
+    - ``slope`` (`float`) -- Mean slope of the power law
     - ``slope_error`` (`float`) -- Error of the slope of the power law
     - ``suf`` (`~numpy.ndarray`) -- Success fraction for each model parameter
     - ``best_parameters`` (`~numpy.ndarray`) -- Parameters satisfying the significance criterion
@@ -322,11 +321,11 @@ def psresp(t, y, dy, slopes, dt, df, percentile, oversampling=10, number_simulat
             best_slope = slopes[np.argmax(suf[:, b, f])]
             best_slope_suf = np.max(suf[:, b, f])
 
-            slopes_fwhm = interpolate.UnivariateSpline(-slopes, suf[:, b, f] - 0.5 * best_slope_suf, s=0).roots()
+            slopes_fwhm = interpolate.UnivariateSpline(slopes, suf[:, b, f] - 0.5 * best_slope_suf, s=0).roots()
             if len(slopes_fwhm) == 0:
                 slopes_fwhm = [np.nan]
-            low_slopes = -slopes_fwhm[0]
-            high_slopes = -slopes_fwhm[-1]
+            low_slopes = slopes_fwhm[0]
+            high_slopes = slopes_fwhm[-1]
             if low_slopes == high_slopes:
                 low_slopes = high_slopes = np.nan
 
@@ -342,7 +341,7 @@ def psresp(t, y, dy, slopes, dt, df, percentile, oversampling=10, number_simulat
     best_parameters = np.where(statistics_test == True)
     mean_slope = np.sum(statistics[0, :, :][statistics_test] * statistics[1, :, :][statistics_test]) \
         / (np.sum(statistics_test))
-    mean_error = np.abs(np.max(statistics[2, :, :][statistics_test]) - np.min(statistics[3, :, :][statistics_test]))
+    mean_error = np.abs(np.min(statistics[2, :, :][statistics_test]) - np.max(statistics[3, :, :][statistics_test]))
 
     return dict(slope=mean_slope,
                 slope_error=mean_error,

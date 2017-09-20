@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def plot_psresp(slopes, dt, df, suf, best_parameters):
+def plot_psresp(slopes, dt, df, suf, mean_slope, slope_error, best_parameters, statistics):
     """
     Plot the success fraction over slopes for parameters satisfying the significance criterion
     and the histogram over the grid of parameters.
@@ -16,8 +16,20 @@ def plot_psresp(slopes, dt, df, suf, best_parameters):
         bin factor for the logarithmic periodogram
     suf : `~numpy.ndarray`
         Success fraction for each model parameter
+    mean_slope : `~float`
+        Mean slope of the power law
+    slope_error : `~float`
+        Error of the mean slope
     best_parameters : `~numpy.ndarray`
         Parameters satisfying the significance criterion
+    statistics : `~numpy.ndarray`
+        Data used to calculate the mean slope and its error
+        over a grid of ``dt`` and ``df``
+
+        - slope with the highest success fraction
+        - highest success fraction
+        - slope of the lower full width at half maximum for the success fraction distribution
+        - slope of the higher full width at half maximum for the success fraction distribution
 
     Returns
     -------
@@ -32,14 +44,32 @@ def plot_psresp(slopes, dt, df, suf, best_parameters):
 
     fig = plt.figure(figsize=(11, 11))
     for indx in range(len(best_parameters[0])):
-        plt.plot(-slopes, suf[:, dt == dt[best_parameters[0][indx]], df == df[best_parameters[1][indx]]],
+        plt.plot(slopes, suf[:, dt == dt[best_parameters[0][indx]], df == df[best_parameters[1][indx]]],
                  label='t bin = {}, f = {}'.format(dt[best_parameters[0][indx]],
                  df[best_parameters[1][indx]]))
+    plt.axhline(y=0.5 * np.max(statistics[1, :, :][best_parameters]),
+                xmin=np.min(statistics[2, :, :][best_parameters]*2/3-2/3),
+                xmax=np.max(statistics[3, :, :][best_parameters])*2/3-2/3,
+                color='k'
+                )
+    plt.axvline(x=mean_slope,
+                ymin=0,
+                ymax=np.max(statistics[1, :, :][best_parameters]),
+                color='k'
+                )
+    plt.text(mean_slope + 0.01,
+             0.5 * np.max(statistics[1, :, :][best_parameters]) + 0.01,
+             'FWHM = {:.1f}'.format(slope_error))
+    plt.text(mean_slope + 0.01, 0.01, 'mean slope = {}'.format(mean_slope))
     plt.xlabel('slope')
     plt.ylabel('success fraction')
+    plt.xlim(np.min(slopes), np.max(slopes))
     plt.ylim(0, 1)
     plt.legend()
-    plt.savefig('SuF', bbox_inches='tight')
+
+    # plt.savefig('SuF', bbox_inches='tight')
+
+    return fig
 
     fig = plt.figure(figsize=(11, 11))
     ax = fig.gca(projection='3d')
@@ -74,6 +104,6 @@ def plot_psresp(slopes, dt, df, suf, best_parameters):
     cyz = plt.colorbar(yz)
     cyz.ax.set_title('df')
 
-    plt.savefig('Contour', bbox_inches='tight')
+    # plt.savefig('Contour', bbox_inches='tight')
 
-    return fig
+    # return fig
